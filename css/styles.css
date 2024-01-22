@@ -7,6 +7,12 @@ body, html {
     align-items: center;
 }
 
+h1 {
+    font-size: 3em;
+    font-family: 'Courier New', monospace;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
 .center-box {
     border-radius: 10px;
     background: rgba(0, 0, 0, 1);
@@ -26,4 +32,11 @@ body, html {
     width: 95%; /* Fill the width of the .center-box minus padding */
     height: 95%; /* Fill the height of the .center-box minus padding */
     display: block; /* Remove extra space beneath the canvas */
+}
+
+.title-container {
+    position: absolute;
+    top: 10px;
+    align-content: center;
+    color: white;
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GUI } from 'dat.gui'
 
 // Set up the scene, camera, and renderer
 const scene = new THREE.Scene();
@@ -23,7 +24,6 @@ const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
 // Add a cone to the scene
-
 const geometry = new THREE.ConeGeometry( 0.1, 0.25, 100 );
 const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
 const cone = new THREE.Mesh(geometry, material ); scene.add( cone );
