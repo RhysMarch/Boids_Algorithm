@@ -6,7 +6,16 @@ const canvas = document.getElementById('scene');
 const centerBox = document.querySelector('.center-box');
 
 // Camera setup with initial aspect ratio
-const camera = new THREE.PerspectiveCamera(75, canvas.offsetWidth / canvas.offsetHeight, 0.1, 1000);
+const frustumSize = 10;
+const aspect = canvas.offsetWidth / canvas.offsetHeight;
+const camera = new THREE.OrthographicCamera(
+    frustumSize * aspect / -2,
+    frustumSize * aspect / 2,
+    frustumSize / 2,
+    frustumSize / -2,
+    1,
+    1000
+);
 camera.position.z = 5;
 
 // Renderer setup with initial size
@@ -14,7 +23,8 @@ const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
 // Add a cone to the scene
-const geometry = new THREE.ConeGeometry( 1, 2, 50 );
+
+const geometry = new THREE.ConeGeometry( 0.1, 0.25, 100 );
 const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
 const cone = new THREE.Mesh(geometry, material ); scene.add( cone );
 scene.add(cone);
