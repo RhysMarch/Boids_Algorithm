@@ -23,6 +23,10 @@ camera.position.z = 5;
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
+const settings = {
+    numberOfBoids: 50,
+    speed: 0.04
+};
 
 class Boid {
     constructor() {
@@ -85,11 +89,28 @@ class Boid {
 
 }
 
-const flock = [];
-const numberOfBoids = 10;
+let flock = [];
+initializeBoids();
 
-for (let i = 0; i < numberOfBoids; i++) {
-    flock.push(new Boid());
+function initializeBoids() {
+    // Clear the existing flock
+    flock.forEach(boid => {
+        scene.remove(boid.mesh);
+    });
+    flock = [];
+
+    // Create a new flock based on the current settings
+    for (let i = 0; i < settings.numberOfBoids; i++) {
+        flock.push(new Boid());
+    }
+}
+
+function updateBoidSpeed() {
+    // Update the speed of each boid in the flock
+    flock.forEach(boid => {
+        boid.velocity.setLength(settings.speed);
+        boid.maxSpeed = settings.speed;
+    });
 }
 
 // Animation loop
@@ -102,6 +123,11 @@ function animate() {
 
     renderer.render(scene, camera);
 }
+
+// GUI Controls
+const gui = new GUI();
+gui.add(settings, 'numberOfBoids', 1, 1000).step(1).name('Number of Boids').onChange(initializeBoids);
+gui.add(settings, 'speed', 0.01, 0.1).name('Boid Speed').onChange(updateBoidSpeed);
 
 // Handle window resizing
 function resizeRenderer() {
