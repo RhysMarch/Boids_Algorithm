@@ -34,9 +34,19 @@ class Boid {
         geometry.rotateX(Math.PI / 2);
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
         this.mesh = new THREE.Mesh(geometry, material);
-        const speed = 0.04; // Adjust this value as needed for desired speed
+        const speed = 0.04;
         this.velocity = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).normalize().multiplyScalar(speed);
         this.acceleration = new THREE.Vector3();
+
+        // Creating boundaries for boids
+        this.bounds = {
+            xMin: frustumSize * aspect / -2, // Left Boundary
+            xMax: frustumSize * aspect / 2, // Right Boundary
+            yMin: frustumSize / -2,        // Bottom Boundary
+            yMax: frustumSize / 2         // Top Boundary
+        };
+
+        this.maxSpeed = speed;
 
         this.mesh.position.set(
             (Math.random() - 0.5) * frustumSize * aspect,
@@ -45,48 +55,54 @@ class Boid {
         );
 
         scene.add(this.mesh);
-
-        // Creating boundaries for boids
-        this.bounds = {
-            xMin: frustumSize * aspect / -2,
-            xMax: frustumSize * aspect / 2,
-            yMin: frustumSize / -2,
-            yMax: frustumSize / 2
-        };
-
-        this.maxSpeed = speed;
     }
 
     update(){
-        // Check 2D boundaries and reverse velocity if a boid is about to fly out of view
-        if (this.mesh.position.x < this.bounds.xMin || this.mesh.position.x > this.bounds.xMax) {
-            this.velocity.x = -this.velocity.x;
-        }
-        if (this.mesh.position.y < this.bounds.yMin || this.mesh.position.y > this.bounds.yMax) {
-            this.velocity.y = -this.velocity.y;
+
+        const margin = 3; // Distance from the boundary where steering starts
+        const maxSteeringForce = 0.0005; // Maximum steering force
+
+        // Calculate distances from each boundary
+        let distanceToLeft = this.mesh.position.x - this.bounds.xMin;
+        let distanceToRight = this.bounds.xMax - this.mesh.position.x;
+        let distanceToTop = this.bounds.yMax - this.mesh.position.y;
+        let distanceToBottom = this.mesh.position.y - this.bounds.yMin;
+
+        // Initialize a steering force vector
+        let steeringForce = new THREE.Vector3();
+
+        // Apply steering force when close to the boundaries
+        if (distanceToLeft < margin) {
+            steeringForce.x += maxSteeringForce * (1 - distanceToLeft / margin);
+        } else if (distanceToRight < margin) {
+            steeringForce.x -= maxSteeringForce * (1 - distanceToRight / margin);
         }
 
-        // Clamp the 2D velocity to ensure it does not exceed the maximum speed
-        if (this.velocity.length() > this.maxSpeed) {
-            this.velocity.setLength(this.maxSpeed);
+        if (distanceToBottom < margin) {
+            steeringForce.y += maxSteeringForce * (1 - distanceToBottom / margin);
+        } else if (distanceToTop < margin) {
+            steeringForce.y -= maxSteeringForce * (1 - distanceToTop / margin);
         }
 
-        // Apply the velocity
-        this.mesh.position.x += this.velocity.x;
-        this.mesh.position.y += this.velocity.y;
+        // Apply the steering force to the acceleration
+        this.acceleration.add(steeringForce);
+
+        // Update velocity with acceleration and clamp to maximum speed
+        this.velocity.add(this.acceleration);
+        this.velocity.clampLength(0, this.maxSpeed);
+
+        // Update position with the velocity
+        this.mesh.position.add(this.velocity);
 
         // Reset acceleration for the next frame
-        this.acceleration.set(0, 0);
+        this.acceleration.set(0, 0, 0);
 
-        // Add the current position to the direction to get a point in space the boid should look at
-        const direction = new THREE.Vector3(this.velocity.x, this.velocity.y, 0);
-        direction.add(this.mesh.position);
+        // Orient the boid to face in the direction of movement
+        const direction = new THREE.Vector3().copy(this.velocity).add(this.mesh.position);
         this.mesh.lookAt(direction);
     }
 
     // Add methods for behaviors here (Separation, Alignment, Cohesion)
-
-
 }
 
 let flock = [];
