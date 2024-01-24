@@ -16,11 +16,11 @@ h1 {
 .center-box {
     border-radius: 10px;
     background: rgba(0, 0, 0, 1);
-    padding: 1%; /* Padding to make the box larger than the scene */
+    padding: 0.1%; /* Padding to make the box larger than the scene */
     box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
 
     /* Minimum size relative to the viewport */
-    min-width: 70vw;
+    min-width: 80vw;
     min-height: 60vh;
 
     /* Maximum size limits */
