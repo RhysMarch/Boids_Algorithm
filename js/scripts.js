@@ -6,8 +6,20 @@ const scene = new THREE.Scene();
 const canvas = document.getElementById('scene');
 const centerBox = document.querySelector('.center-box');
 
+const settings = {
+    numberOfBoids: 300,
+    speed: 0.05,
+    personalSpace: 0.5,
+    maxSteeringForce: 0.0003,
+    margin: 3,
+    showPersonalSpace: false,
+    showVisualRange: false,
+    visualRange: 1.5,
+    frustumSize: 15,
+};
+
 // Camera setup with initial aspect ratio
-const frustumSize = 10;
+const frustumSize = settings.frustumSize;
 const aspect = canvas.offsetWidth / canvas.offsetHeight;
 const camera = new THREE.OrthographicCamera(
     frustumSize * aspect / -2,
@@ -22,17 +34,6 @@ camera.position.z = 5;
 // Renderer setup with initial size
 const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
-
-const settings = {
-    numberOfBoids: 2,
-    speed: 0.02,
-    personalSpace: 1,
-    maxSteeringForce: 0.0003,
-    margin: 4,
-    showPersonalSpace: false,
-    showVisualRange: true,
-    visualRange: 4,
-};
 
 class Boid {
     constructor() {
@@ -121,53 +122,79 @@ class Boid {
         //* -------------------------------------------------*//
         //*                   Separation                    *//
         //* -----------------------------------------------*//
-        let averageSteeringForce = new THREE.Vector3();
+        let separationForce = new THREE.Vector3();
         let nearbyBoidsCount = 0;
 
         flock.forEach(otherBoid => {
             let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
             if (otherBoid !== this && distance < settings.personalSpace) {
-                // Calculate vector pointing away from the neighbor
-                let awayFromBoid = new THREE.Vector3().subVectors(this.mesh.position, otherBoid.mesh.position).normalize().divideScalar(distance);
-                averageSteeringForce.add(awayFromBoid);
+                let diff = new THREE.Vector3().subVectors(this.mesh.position, otherBoid.mesh.position);
+                diff.normalize().divideScalar(distance); // Weight by distance
+                separationForce.add(diff);
                 nearbyBoidsCount++;
             }
         });
 
         if (nearbyBoidsCount > 0) {
-            // Calculate the average steering force
-            averageSteeringForce.divideScalar(nearbyBoidsCount);
-
-            // Make sure the force is not greater than the max force allowed
-            if (averageSteeringForce.length() > settings.maxSteeringForce) {
-                averageSteeringForce.normalize().multiplyScalar(settings.maxSteeringForce);
-            }
-
-            // Apply the steering force to the boids acceleration for smooth turning
-            this.acceleration.add(averageSteeringForce);
-
-        } else { // If not close to other boids, ease speed back up
-            let desiredVelocity = this.velocity.clone().normalize().multiplyScalar(this.maxSpeed);
-            this.velocity.lerp(desiredVelocity, 0.1);
+            separationForce.divideScalar(nearbyBoidsCount);
+            separationForce.multiplyScalar(settings.maxSteeringForce * 0.8); // Increase strength for separation
         }
+        this.acceleration.add(separationForce);
 
         //* -------------------------------------------------*//
         //*                    Alignment                    *//
         //* -----------------------------------------------*//
+        let alignmentForce = new THREE.Vector3();
+        let alignableBoidsCount = 0;
+
         flock.forEach(otherBoid => {
             let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
-            if (otherBoid !== this && distance < settings.visualRange) {
-
+            if (otherBoid !== this && distance < settings.visualRange && distance > settings.personalSpace) {
+                alignmentForce.add(otherBoid.velocity);
+                alignableBoidsCount++;
             }
         });
 
+        if (alignableBoidsCount > 0) {
+            alignmentForce.divideScalar(alignableBoidsCount);
+            alignmentForce.normalize();
+            alignmentForce.multiplyScalar(this.maxSpeed);
 
+            // Introduce randomness to the alignment
+            alignmentForce.add(new THREE.Vector3((Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.1, 0));
 
+            // Steer towards the average direction with a little randomness
+            alignmentForce.sub(this.velocity);
+            if (alignmentForce.lengthSq() > settings.maxSteeringForce * settings.maxSteeringForce) {
+                alignmentForce.normalize().multiplyScalar(settings.maxSteeringForce);
+            }
+
+            this.acceleration.add(alignmentForce);
+        }
 
 
         //* -------------------------------------------------*//
         //*                     Cohesion                    *//
         //* -----------------------------------------------*//
+        let averagePosition = new THREE.Vector3();
+        let cohesionCount = 0;
+
+        flock.forEach(otherBoid => {
+            let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
+            if (otherBoid !== this && distance < settings.visualRange) {
+                averagePosition.add(otherBoid.mesh.position);
+                cohesionCount++;
+            }
+        });
+
+        if (cohesionCount > 0) {
+            averagePosition.divideScalar(cohesionCount);
+            let desiredDirection = new THREE.Vector3().subVectors(averagePosition, this.mesh.position).normalize();
+            let desiredVelocity = desiredDirection.multiplyScalar(this.maxSpeed);
+            let cohesionForce = new THREE.Vector3().subVectors(desiredVelocity, this.velocity);
+            cohesionForce.clampLength(0, settings.maxSteeringForce);
+            this.acceleration.add(cohesionForce);
+        }
 
     }
 
