@@ -18,7 +18,7 @@ const settings = {
     frustumSize: 15,
     boidSize: { x: 0.1, y: 0.2, z: 32 },
     alignmentRandomness: 0.3, // Randomness factor for alignment
-    separationMultiplier: 0.3, // Multiplier for separation force
+    separationMultiplier: 0.5, // Multiplier for separation force
 };
 
 // Camera setup with initial aspect ratio
