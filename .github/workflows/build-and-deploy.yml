@@ -29,4 +29,4 @@ jobs:
           git config --local user.name "GitHub Action"
           git add -f dist/
           git commit -m "Deploying to master [skip ci]"
-          git push https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/RhysMarch/Boids_Algorithm.git
+          git push https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/RhysMarch/Boids_Algorithm.git HEAD:master
