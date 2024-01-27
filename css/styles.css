@@ -2,28 +2,30 @@ body, html {
     background: slategray;
     height: 100%;
     margin: 0;
+    box-sizing: border-box; /* Include padding in the height calculation */
     display: flex;
-    justify-content: center;
+    flex-direction: column; /* Stack children vertically */
     align-items: center;
+    justify-content: flex-start; /* Align children to the start */
 }
 
 h1 {
     font-size: 3em;
-    font-family: 'Courier New', monospace;
+    font-family: 'Poppins', sans-serif;
     text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+    margin: 0 auto; /* Center the title horizontally */
+    width: 100%; /* Full width to center the text correctly */
+    text-align: center; /* Center the text */
 }
+
 
 .center-box {
     border-radius: 10px;
     background: rgba(0, 0, 0, 1);
-    padding: 0.1%; /* Padding to make the box larger than the scene */
+    padding: 0.1%;
     box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
-
-    /* Minimum size relative to the viewport */
-    min-width: 80vw;
-    min-height: 60vh;
-
-    /* Maximum size limits */
+    min-width: 90vw;
+    min-height: 90vh;
     max-width: 95vw;
     max-height: 95vh;
 }
@@ -35,8 +37,7 @@ h1 {
 }
 
 .title-container {
-    position: absolute;
-    top: 10px;
-    align-content: center;
+    text-align: center;
     color: white;
+    z-index: 10; /* Ensure the title is above other elements */
 }
