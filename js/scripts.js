@@ -12,13 +12,16 @@ const settings = {
     personalSpace: 0.5,
     maxSteeringForce: 0.0003,
     margin: 3,
-    showPersonalSpace: false,
-    showVisualRange: false,
     visualRange: 1.5,
     frustumSize: 15,
     boidSize: { x: 0.1, y: 0.2, z: 32 },
-    alignmentRandomness: 0.3, // Randomness factor for alignment
-    separationMultiplier: 0.5, // Multiplier for separation force
+    alignmentRandomness: 0.3,
+    separationMultiplier: 0.5,
+    showPersonalSpace: false,
+    showVisualRange: false,
+    enableSeparation: true,
+    enableAlignment: true,
+    enableCohesion: true,
 };
 
 // Camera setup with initial aspect ratio
@@ -125,83 +128,89 @@ class Boid {
         //* -------------------------------------------------*//
         //*                   Separation                    *//
         //* -----------------------------------------------*//
-        let separationForce = new THREE.Vector3();
-        let nearbyBoidsCount = 0;
+        if (settings.enableSeparation) {
+            let separationForce = new THREE.Vector3();
+            let nearbyBoidsCount = 0;
 
-        flock.forEach(otherBoid => {
-            let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
-            if (otherBoid !== this && distance < settings.personalSpace) {
-                let diff = new THREE.Vector3().subVectors(this.mesh.position, otherBoid.mesh.position);
-                diff.normalize().divideScalar(distance); // Weight by distance
-                separationForce.add(diff);
-                nearbyBoidsCount++;
+            flock.forEach(otherBoid => {
+                let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
+                if (otherBoid !== this && distance < settings.personalSpace) {
+                    let diff = new THREE.Vector3().subVectors(this.mesh.position, otherBoid.mesh.position);
+                    diff.normalize().divideScalar(distance); // Weight by distance
+                    separationForce.add(diff);
+                    nearbyBoidsCount++;
+                }
+            });
+
+            if (nearbyBoidsCount > 0) {
+                separationForce.divideScalar(nearbyBoidsCount);
+                separationForce.multiplyScalar(settings.maxSteeringForce * settings.separationMultiplier);
             }
-        });
-
-        if (nearbyBoidsCount > 0) {
-            separationForce.divideScalar(nearbyBoidsCount);
-            separationForce.multiplyScalar(settings.maxSteeringForce * settings.separationMultiplier);
+            this.acceleration.add(separationForce);
         }
-        this.acceleration.add(separationForce);
+
 
         //* -------------------------------------------------*//
         //*                    Alignment                    *//
         //* -----------------------------------------------*//
-        let alignmentForce = new THREE.Vector3();
-        let alignableBoidsCount = 0;
+        if (settings.enableAlignment) {
+            let alignmentForce = new THREE.Vector3();
+            let alignableBoidsCount = 0;
 
-        flock.forEach(otherBoid => {
-            let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
-            if (otherBoid !== this && distance < settings.visualRange && distance > settings.personalSpace) {
-                alignmentForce.add(otherBoid.velocity);
-                alignableBoidsCount++;
+            flock.forEach(otherBoid => {
+                let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
+                if (otherBoid !== this && distance < settings.visualRange && distance > settings.personalSpace) {
+                    alignmentForce.add(otherBoid.velocity);
+                    alignableBoidsCount++;
+                }
+            });
+
+            if (alignableBoidsCount > 0) {
+                alignmentForce.divideScalar(alignableBoidsCount);
+                alignmentForce.normalize();
+                alignmentForce.multiplyScalar(this.maxSpeed);
+
+                // Introduce randomness to the alignment
+                alignmentForce.add(new THREE.Vector3(
+                    (Math.random() - 0.5) * settings.alignmentRandomness,
+                    (Math.random() - 0.5) * settings.alignmentRandomness, 0)
+                );
+
+                // Steer towards the average direction with a little randomness
+                alignmentForce.sub(this.velocity);
+                if (alignmentForce.lengthSq() > settings.maxSteeringForce * settings.maxSteeringForce) {
+                    alignmentForce.normalize().multiplyScalar(settings.maxSteeringForce);
+                }
+
+                this.acceleration.add(alignmentForce);
             }
-        });
-
-        if (alignableBoidsCount > 0) {
-            alignmentForce.divideScalar(alignableBoidsCount);
-            alignmentForce.normalize();
-            alignmentForce.multiplyScalar(this.maxSpeed);
-
-            // Introduce randomness to the alignment
-            alignmentForce.add(new THREE.Vector3(
-                (Math.random() - 0.5) * settings.alignmentRandomness,
-                (Math.random() - 0.5) * settings.alignmentRandomness, 0)
-            );
-
-            // Steer towards the average direction with a little randomness
-            alignmentForce.sub(this.velocity);
-            if (alignmentForce.lengthSq() > settings.maxSteeringForce * settings.maxSteeringForce) {
-                alignmentForce.normalize().multiplyScalar(settings.maxSteeringForce);
-            }
-
-            this.acceleration.add(alignmentForce);
         }
-
 
         //* -------------------------------------------------*//
         //*                     Cohesion                    *//
         //* -----------------------------------------------*//
-        let averagePosition = new THREE.Vector3();
-        let cohesionCount = 0;
+        if (settings.enableCohesion) {
+            let averagePosition = new THREE.Vector3();
+            let cohesionCount = 0;
 
-        flock.forEach(otherBoid => {
-            let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
-            if (otherBoid !== this && distance < settings.visualRange) {
-                averagePosition.add(otherBoid.mesh.position);
-                cohesionCount++;
+            flock.forEach(otherBoid => {
+                let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
+                if (otherBoid !== this && distance < settings.visualRange) {
+                    averagePosition.add(otherBoid.mesh.position);
+                    cohesionCount++;
+                }
+            });
+
+            if (cohesionCount > 0) {
+                averagePosition.divideScalar(cohesionCount);
+                let desiredDirection = new THREE.Vector3().subVectors(averagePosition, this.mesh.position).normalize();
+                let desiredVelocity = desiredDirection.multiplyScalar(this.maxSpeed);
+                let cohesionForce = new THREE.Vector3().subVectors(desiredVelocity, this.velocity);
+                cohesionForce.clampLength(0, settings.maxSteeringForce);
+                this.acceleration.add(cohesionForce);
             }
-        });
 
-        if (cohesionCount > 0) {
-            averagePosition.divideScalar(cohesionCount);
-            let desiredDirection = new THREE.Vector3().subVectors(averagePosition, this.mesh.position).normalize();
-            let desiredVelocity = desiredDirection.multiplyScalar(this.maxSpeed);
-            let cohesionForce = new THREE.Vector3().subVectors(desiredVelocity, this.velocity);
-            cohesionForce.clampLength(0, settings.maxSteeringForce);
-            this.acceleration.add(cohesionForce);
         }
-
     }
 
     togglePersonalSpaceVisibility(visible) {
@@ -210,6 +219,7 @@ class Boid {
     toggleVisualRange(visible) {
         this.visualRangeMesh.visible = visible;
     }
+
 }
 
 let flock = [];
@@ -254,13 +264,11 @@ function animate() {
 const gui = new GUI();
 gui.add(settings, 'numberOfBoids', 1, 1000).step(1).name('Number of Boids').onChange(initializeBoids);
 gui.add(settings, 'speed', 0.01, 0.1).name('Boid Speed').onChange(updateBoidSpeed);
-gui.add(settings, 'showPersonalSpace').name('Show Personal Space').onChange(value => {
-    flock.forEach(boid => boid.togglePersonalSpaceVisibility(value));
-});
-gui.add(settings, 'showVisualRange').name('Show Visual Range').onChange(value => {
-    flock.forEach(boid => boid.toggleVisualRange(value));
-});
-
+gui.add(settings, 'showPersonalSpace').name('Show Personal Space').onChange(value => {flock.forEach(boid => boid.togglePersonalSpaceVisibility(value));});
+gui.add(settings, 'showVisualRange').name('Show Visual Range').onChange(value => {flock.forEach(boid => boid.toggleVisualRange(value));});
+gui.add(settings, 'enableSeparation').name('Enable Separation');
+gui.add(settings, 'enableAlignment').name('Enable Alignment');
+gui.add(settings, 'enableCohesion').name('Enable Cohesion');
 
 // Handle window resizing
 function resizeRenderer() {
