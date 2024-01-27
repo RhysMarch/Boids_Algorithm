@@ -11,9 +11,25 @@ The Boids Algorithm is a simulation of collective behavior, such as bird flockin
 The term "Boids" represents a simulated flocking behaviour, which was originally developed by Craig Reynolds in 1986. You can read more about the Boids algorithm on its Wikipedia page.
 https://en.wikipedia.org/wiki/Boids
 
+<be>
+
+
+
+
+# Demo
+
+Visit the live demo at the link below:
+
+[Live Demo](https://rhysmarch.github.io/Boids_Algorithm/)
+
+The demo allows you to view a simulation of the Boids algorithm. Use the interactive controls to adjust various parameters and see how the Boids respond in real-time.
+
 <br>
 
-## Prerequisites
+
+
+
+# Prerequisites
 
 Before you begin, ensure you have the following:
 
@@ -21,9 +37,10 @@ Before you begin, ensure you have the following:
 
 - **Node.js and npm**: This project relies on Node.js, a JavaScript runtime, and npm (Node Package Manager) for managing dependencies and running the development server. You can download and install Node.js, which includes npm, from the official website: [Node.js Downloads](https://nodejs.org/)
 
-<br>
 
-## Cloning and Running the Project
+
+
+# Cloning and Running the Project
 
 To run this project locally, follow these steps:
 
