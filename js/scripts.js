@@ -24,13 +24,14 @@ const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
 const settings = {
-    numberOfBoids: 10,
+    numberOfBoids: 2,
     speed: 0.02,
     personalSpace: 1,
     maxSteeringForce: 0.0003,
     margin: 4,
-    showPersonalSpace: true
-
+    showPersonalSpace: false,
+    showVisualRange: true,
+    visualRange: 4,
 };
 
 class Boid {
@@ -47,9 +48,16 @@ class Boid {
 
         // Personal space visualisation
         const personalSpaceGeometry = new THREE.SphereGeometry(settings.personalSpace, 16, 16);
-        const personalSpaceMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.1 });
+        const personalSpaceMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 });
         this.personalSpaceMesh = new THREE.Mesh(personalSpaceGeometry, personalSpaceMaterial);
         this.mesh.add(this.personalSpaceMesh);
+
+        // Visual range visualisation
+        const visualRangeGeometry = new THREE.SphereGeometry(settings.visualRange, 16, 16);
+        const visualRangeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.1 });
+        this.visualRangeMesh = new THREE.Mesh(visualRangeGeometry, visualRangeMaterial);
+        this.mesh.add(this.visualRangeMesh);
+
 
         // Creating scene boundaries for boids
         this.bounds = {
@@ -109,11 +117,10 @@ class Boid {
         const direction = new THREE.Vector3().copy(this.velocity).add(this.mesh.position);
         this.mesh.lookAt(direction);
 
-        //* -------------------------------------------------*/
-        // Behaviors here (Separation, Alignment, Cohesion)  /
-        /* ------------------------------------------------*/
 
-        // Separation
+        //* -------------------------------------------------*//
+        //*                   Separation                    *//
+        //* -----------------------------------------------*//
         let averageSteeringForce = new THREE.Vector3();
         let nearbyBoidsCount = 0;
 
@@ -144,10 +151,31 @@ class Boid {
             this.velocity.lerp(desiredVelocity, 0.1);
         }
 
+        //* -------------------------------------------------*//
+        //*                    Alignment                    *//
+        //* -----------------------------------------------*//
+        flock.forEach(otherBoid => {
+            let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
+            if (otherBoid !== this && distance < settings.visualRange) {
+
+            }
+        });
+
+
+
+
+
+        //* -------------------------------------------------*//
+        //*                     Cohesion                    *//
+        //* -----------------------------------------------*//
+
     }
 
     togglePersonalSpaceVisibility(visible) {
         this.personalSpaceMesh.visible = visible;
+    }
+    toggleVisualRange(visible) {
+        this.visualRangeMesh.visible = visible;
     }
 }
 
@@ -164,7 +192,8 @@ function initializeBoids() {
     // Create a new flock based on the current settings
     for (let i = 0; i < settings.numberOfBoids; i++) {
         let newBoid = new Boid();
-        newBoid.togglePersonalSpaceVisibility(settings.showPersonalSpace); // Set visibility based on current setting
+        newBoid.togglePersonalSpaceVisibility(settings.showPersonalSpace);
+        newBoid.toggleVisualRange(settings.showVisualRange);
         flock.push(newBoid);
     }
 }
@@ -194,6 +223,9 @@ gui.add(settings, 'numberOfBoids', 1, 1000).step(1).name('Number of Boids').onCh
 gui.add(settings, 'speed', 0.01, 0.1).name('Boid Speed').onChange(updateBoidSpeed);
 gui.add(settings, 'showPersonalSpace').name('Show Personal Space').onChange(value => {
     flock.forEach(boid => boid.togglePersonalSpaceVisibility(value));
+});
+gui.add(settings, 'showVisualRange').name('Show Visual Range').onChange(value => {
+    flock.forEach(boid => boid.toggleVisualRange(value));
 });
 
 
