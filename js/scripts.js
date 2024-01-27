@@ -33,15 +33,23 @@ const settings = {
 
 class Boid {
     constructor() {
+
+        // Boid Visualisation
         const geometry = new THREE.ConeGeometry(0.1, 0.2, 32);
-        geometry.rotateX(Math.PI / 2);
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
         this.mesh = new THREE.Mesh(geometry, material);
         const speed = 0.03;
         this.velocity = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).normalize().multiplyScalar(speed);
         this.acceleration = new THREE.Vector3();
+        geometry.rotateX(Math.PI / 2);
 
-        // Creating boundaries for boids
+        // Personal space visualisation
+        const personalSpaceGeometry = new THREE.SphereGeometry(settings.personalSpace, 16, 16);
+        const personalSpaceMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.1 });
+        this.personalSpaceMesh = new THREE.Mesh(personalSpaceGeometry, personalSpaceMaterial);
+        this.mesh.add(this.personalSpaceMesh);
+
+        // Creating scene boundaries for boids
         this.bounds = {
             xMin: frustumSize * aspect / -2, // Left Boundary
             xMax: frustumSize * aspect / 2, // Right Boundary
@@ -56,7 +64,6 @@ class Boid {
             (Math.random() - 0.5) * frustumSize,
             0
         );
-
         scene.add(this.mesh);
     }
 
@@ -116,8 +123,6 @@ class Boid {
 
     }
 }
-
-
 
 let flock = [];
 initializeBoids();
