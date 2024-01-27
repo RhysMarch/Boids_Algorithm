@@ -24,8 +24,11 @@ const renderer = new THREE.WebGLRenderer({ canvas: canvas });
 renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
 const settings = {
-    numberOfBoids: 50,
-    speed: 0.04
+    numberOfBoids: 10,
+    speed: 0.03,
+    personalSpace: 1,
+    maxSteeringForce: 0.0005,
+    margin: 3
 };
 
 class Boid {
@@ -34,7 +37,7 @@ class Boid {
         geometry.rotateX(Math.PI / 2);
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
         this.mesh = new THREE.Mesh(geometry, material);
-        const speed = 0.04;
+        const speed = 0.03;
         this.velocity = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).normalize().multiplyScalar(speed);
         this.acceleration = new THREE.Vector3();
 
@@ -58,10 +61,6 @@ class Boid {
     }
 
     update(){
-
-        const margin = 3; // Distance from the boundary where steering starts
-        const maxSteeringForce = 0.0005; // Maximum steering force
-
         // Calculate distances from each boundary
         let distanceToLeft = this.mesh.position.x - this.bounds.xMin;
         let distanceToRight = this.bounds.xMax - this.mesh.position.x;
@@ -72,16 +71,16 @@ class Boid {
         let steeringForce = new THREE.Vector3();
 
         // Apply steering force when close to the boundaries
-        if (distanceToLeft < margin) {
-            steeringForce.x += maxSteeringForce * (1 - distanceToLeft / margin);
-        } else if (distanceToRight < margin) {
-            steeringForce.x -= maxSteeringForce * (1 - distanceToRight / margin);
+        if (distanceToLeft < settings.margin) {
+            steeringForce.x += settings.maxSteeringForce * (1 - distanceToLeft / settings.margin);
+        } else if (distanceToRight < settings.margin) {
+            steeringForce.x -= settings.maxSteeringForce * (1 - distanceToRight / settings.margin);
         }
 
-        if (distanceToBottom < margin) {
-            steeringForce.y += maxSteeringForce * (1 - distanceToBottom / margin);
-        } else if (distanceToTop < margin) {
-            steeringForce.y -= maxSteeringForce * (1 - distanceToTop / margin);
+        if (distanceToBottom < settings.margin) {
+            steeringForce.y += settings.maxSteeringForce * (1 - distanceToBottom / settings.margin);
+        } else if (distanceToTop < settings.margin) {
+            steeringForce.y -= settings.maxSteeringForce * (1 - distanceToTop / settings.margin);
         }
 
         // Apply the steering force to the acceleration
@@ -100,10 +99,25 @@ class Boid {
         // Orient the boid to face in the direction of movement
         const direction = new THREE.Vector3().copy(this.velocity).add(this.mesh.position);
         this.mesh.lookAt(direction);
-    }
 
-    // Add methods for behaviors here (Separation, Alignment, Cohesion)
+        //* -------------------------------------------------*/
+        // Behaviors here (Separation, Alignment, Cohesion)  /
+        /* ------------------------------------------------*/
+
+        // Separation
+        flock.forEach(otherBoid => {
+            let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
+            if (otherBoid !== this && distance < settings.personalSpace) {
+                console.log("Near Miss");
+            }
+        });
+
+
+
+    }
 }
+
+
 
 let flock = [];
 initializeBoids();
