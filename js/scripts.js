@@ -8,7 +8,7 @@ const centerBox = document.querySelector('.center-box');
 
 const settings = {
     numberOfBoids: 300,
-    speed: 0.05,
+    speed: 0.07,
     personalSpace: 0.5,
     maxSteeringForce: 0.0003,
     margin: 3,
@@ -16,6 +16,9 @@ const settings = {
     showVisualRange: false,
     visualRange: 1.5,
     frustumSize: 15,
+    boidSize: { x: 0.1, y: 0.2, z: 32 },
+    alignmentRandomness: 0.3, // Randomness factor for alignment
+    separationMultiplier: 0.3, // Multiplier for separation force
 };
 
 // Camera setup with initial aspect ratio
@@ -39,7 +42,7 @@ class Boid {
     constructor() {
 
         // Boid Visualisation
-        const geometry = new THREE.ConeGeometry(0.1, 0.2, 32);
+        const geometry = new THREE.ConeGeometry(settings.boidSize.x, settings.boidSize.y, settings.boidSize.z);
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
         this.mesh = new THREE.Mesh(geometry, material);
         const speed = settings.speed;
@@ -137,7 +140,7 @@ class Boid {
 
         if (nearbyBoidsCount > 0) {
             separationForce.divideScalar(nearbyBoidsCount);
-            separationForce.multiplyScalar(settings.maxSteeringForce * 0.8); // Increase strength for separation
+            separationForce.multiplyScalar(settings.maxSteeringForce * settings.separationMultiplier);
         }
         this.acceleration.add(separationForce);
 
@@ -161,7 +164,10 @@ class Boid {
             alignmentForce.multiplyScalar(this.maxSpeed);
 
             // Introduce randomness to the alignment
-            alignmentForce.add(new THREE.Vector3((Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.1, 0));
+            alignmentForce.add(new THREE.Vector3(
+                (Math.random() - 0.5) * settings.alignmentRandomness,
+                (Math.random() - 0.5) * settings.alignmentRandomness, 0)
+            );
 
             // Steer towards the average direction with a little randomness
             alignmentForce.sub(this.velocity);
