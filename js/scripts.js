@@ -28,7 +28,9 @@ const settings = {
     speed: 0.03,
     personalSpace: 1,
     maxSteeringForce: 0.0005,
-    margin: 3
+    margin: 3,
+    showPersonalSpace: true
+
 };
 
 class Boid {
@@ -122,6 +124,10 @@ class Boid {
 
 
     }
+
+    togglePersonalSpaceVisibility(visible) {
+        this.personalSpaceMesh.visible = visible;
+    }
 }
 
 let flock = [];
@@ -163,6 +169,10 @@ function animate() {
 const gui = new GUI();
 gui.add(settings, 'numberOfBoids', 1, 1000).step(1).name('Number of Boids').onChange(initializeBoids);
 gui.add(settings, 'speed', 0.01, 0.1).name('Boid Speed').onChange(updateBoidSpeed);
+gui.add(settings, 'showPersonalSpace').name('Show Personal Space').onChange(value => {
+    flock.forEach(boid => boid.togglePersonalSpaceVisibility(value));
+});
+
 
 // Handle window resizing
 function resizeRenderer() {
