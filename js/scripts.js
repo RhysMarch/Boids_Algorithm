@@ -25,10 +25,10 @@ renderer.setSize(canvas.offsetWidth, canvas.offsetHeight);
 
 const settings = {
     numberOfBoids: 10,
-    speed: 0.03,
+    speed: 0.02,
     personalSpace: 1,
-    maxSteeringForce: 0.0005,
-    margin: 3,
+    maxSteeringForce: 0.0003,
+    margin: 4,
     showPersonalSpace: true
 
 };
@@ -40,7 +40,7 @@ class Boid {
         const geometry = new THREE.ConeGeometry(0.1, 0.2, 32);
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
         this.mesh = new THREE.Mesh(geometry, material);
-        const speed = 0.03;
+        const speed = settings.speed;
         this.velocity = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).normalize().multiplyScalar(speed);
         this.acceleration = new THREE.Vector3();
         geometry.rotateX(Math.PI / 2);
@@ -114,14 +114,35 @@ class Boid {
         /* ------------------------------------------------*/
 
         // Separation
+        let averageSteeringForce = new THREE.Vector3();
+        let nearbyBoidsCount = 0;
+
         flock.forEach(otherBoid => {
             let distance = this.mesh.position.distanceTo(otherBoid.mesh.position);
             if (otherBoid !== this && distance < settings.personalSpace) {
-                console.log("Near Miss");
+                // Calculate vector pointing away from the neighbor
+                let awayFromBoid = new THREE.Vector3().subVectors(this.mesh.position, otherBoid.mesh.position).normalize().divideScalar(distance);
+                averageSteeringForce.add(awayFromBoid);
+                nearbyBoidsCount++;
             }
         });
 
+        if (nearbyBoidsCount > 0) {
+            // Calculate the average steering force
+            averageSteeringForce.divideScalar(nearbyBoidsCount);
 
+            // Make sure the force is not greater than the max force allowed
+            if (averageSteeringForce.length() > settings.maxSteeringForce) {
+                averageSteeringForce.normalize().multiplyScalar(settings.maxSteeringForce);
+            }
+
+            // Apply the steering force to the boids acceleration for smooth turning
+            this.acceleration.add(averageSteeringForce);
+
+        } else { // If not close to other boids, ease speed back up
+            let desiredVelocity = this.velocity.clone().normalize().multiplyScalar(this.maxSpeed);
+            this.velocity.lerp(desiredVelocity, 0.1);
+        }
 
     }
 
@@ -142,7 +163,9 @@ function initializeBoids() {
 
     // Create a new flock based on the current settings
     for (let i = 0; i < settings.numberOfBoids; i++) {
-        flock.push(new Boid());
+        let newBoid = new Boid();
+        newBoid.togglePersonalSpaceVisibility(settings.showPersonalSpace); // Set visibility based on current setting
+        flock.push(newBoid);
     }
 }
 
