@@ -22,11 +22,19 @@ jobs:
 
       - name: Build
         run: npm run build
+        
+      - name: Update README
+        run: |
+          # Add your commands to update the README.md here
+          # For example, you might append a new section to the README
+          # echo "## New Section" >> README.md
 
       - name: Commit and Push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add -f dist/
-          git commit -m "Deploying to master [skip ci]"
-          git push https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/RhysMarch/Boids_Algorithm.git HEAD:master
+          # Use '|| true' to avoid failing the workflow if there's nothing to commit
+          git commit -m "Deploying to master [skip ci]" || true
+          # Only push if there are changes to commit
+          git diff --quiet || git push https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/RhysMarch/Boids_Algorithm.git HEAD:master
